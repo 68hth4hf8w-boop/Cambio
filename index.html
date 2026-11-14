@@ -387,7 +387,12 @@ function apply(s, pid, a) {
       pushDiscard(s, old, pid);
       say(s, name + ' sostituisce una carta e scarta ' + cname(old) + '.');
       botKnown(s, pid, k => { kAdd(k, nw); kDel(k, old); });
-      endTurn(s); return true;
+      const r0 = rank(old);
+      const eff0 = r0 === 11 ? 'J' : r0 === 12 ? 'Q' : r0 === 1 ? 'A' : null;
+      if (eff0 && effectPossible(s, pid, eff0)) {
+        s.turn.step = 'effect'; s.turn.effect = eff0; s.turn.drawn = null;
+      } else endTurn(s);
+      return true;
     }
     case 'discard': {
       if (!turnOK(s, pid, 'decide')) return false;
@@ -858,9 +863,10 @@ function statusHTML(){
       btns='<div class="drawn">'+cardHTML(t.drawn,{cls:'md'})+'<button class="pri" data-a="discard">Scarta</button></div>';
     }
     else if(t.step==='effect'){
-      if(t.effect==='J'){ msg='<b>Jack:</b> tocca una tua carta per guardarla.'; btns='<button class="sm" data-a="skip">Salta</button>'; }
-      if(t.effect==='Q'){ msg=U.qMine? '<b>Donna:</b> ora tocca una carta di un avversario.' : '<b>Donna:</b> tocca prima una tua carta da cedere.'; btns='<button class="sm" data-a="skip">Salta</button>'; }
-      if(t.effect==='A'){ msg='<b>Asso:</b> scegli a chi dare una carta in più.'; btns='<button class="sm" data-a="skip">Salta</button>'; }
+      const nm = t.effect==='J'?'Jack':t.effect==='Q'?'Donna':'Asso';
+      const how = t.effect==='J' ? 'tocca una tua carta per guardarla' : t.effect==='Q' ? (U.qMine ? 'ora tocca una carta di un avversario' : 'tocca prima una tua carta da cedere') : 'scegli a chi dare una carta in più';
+      msg='<b>'+nm+' scartato.</b> Vuoi usare l\'effetto? '+how+', oppure rinuncia.';
+      btns='<button data-a="skip">Non usare l\'effetto</button>';
     }
     else if(t.step==='reveal'){ msg='Guarda la carta…'; }
   } else {
@@ -966,10 +972,10 @@ function rulesHTML(){
   +'<li><b>Valori:</b> A=1, 2–10 nominale, J=11, Q=12, K=13, <b>K♥=0</b>.</li>'
   +'<li><b>Turno:</b> pesca dal mazzo o dagli scarti; sostituisci una tua carta (nota o no) oppure scarta quella pescata.</li>'
   +'<li><b>Scarto veloce:</b> quando una carta viene scartata, chi ha una carta dello stesso valore la tocca e sceglie «Scarta», anche fuori turno. Se sbagli, la carta viene mostrata e ne prendi una in più.</li>'
-  +'<li><b>Effetti</b> (scartando la carta appena pescata): <b>A</b> dai una carta coperta a un avversario · <b>J</b> guardi una tua carta · <b>Q</b> scambi alla cieca una tua carta con una avversaria.</li>'
+  +'<li><b>Effetti</b> (quando scarti la carta pescata o quella che sostituisci): <b>A</b> dai una carta coperta a un avversario · <b>J</b> guardi una tua carta · <b>Q</b> scambi alla cieca una tua carta con una avversaria.</li>'
   +'<li><b>ULTIMO GIRO:</b> a inizio turno, al posto di pescare. Gli altri fanno un ultimo turno e la manche finisce.</li></ul>'
   +'<h3>Come ho interpretato i punti non chiari</h3><ul>'
-  +'<li>Gli effetti scattano solo scartando la carta pescata, non quando sostituisci una carta del campo.</li>'
+  +'<li>Gli effetti scattano quando una carta finisce negli scarti per tua scelta nel turno (scartando la pescata o sostituendo una carta del campo), non con lo scarto veloce fuori turno.</li>'
   +'<li>Lo scarto veloce vale per lo stesso numero/figura (anche il K♥ con gli altri Re), solo finché quella è l\'ultima carta scartata, e non sulla carta scartata da te.</li>'
   +'<li>Chiamando ULTIMO GIRO il turno finisce subito, senza pescare.</li>'
   +'<li>A pari punteggio minimo, tutti i pari prendono 0.</li>'
